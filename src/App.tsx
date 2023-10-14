@@ -22,20 +22,24 @@ import '@ionic/react/css/display.css';
 /* Theme variables */
 import './theme/variables.css';
 
+import { SongsList } from './todo/SongsList';
+import { SongProvider } from './todo/SongProvider';
+import { SongEdit } from './todo/SongEdit';
+
+
 setupIonicReact();
 
 const App: React.FC = () => (
   <IonApp>
-    <IonReactRouter>
-      <IonRouterOutlet>
-        <Route exact path="/home">
-          <Home />
-        </Route>
-        <Route exact path="/">
-          <Redirect to="/home" />
-        </Route>
-      </IonRouterOutlet>
-    </IonReactRouter>
+    <SongProvider>
+      <IonReactRouter>
+        <IonRouterOutlet>
+          <Route exact path="/songs" component={SongsList} />
+          <Route path="/song/:id" component={SongEdit} exact={true}/>
+          <Route exact path="/" render={() => <Redirect to="/songs" />} />
+        </IonRouterOutlet>
+      </IonReactRouter>
+    </SongProvider>
   </IonApp>
 );
 
