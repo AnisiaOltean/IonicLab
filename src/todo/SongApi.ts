@@ -41,7 +41,10 @@ export const updateSongAPI: (song: Song) => Promise<Song[]> = (song) => {
 
 interface MessageData {
     event: string;
-    payload: string;
+    payload: {
+      successMessage: string,
+      updatedSong: Song
+    };
 }
 
 export const newWebSocket = (onMessage: (data: MessageData) => void) => {

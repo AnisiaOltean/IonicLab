@@ -13,7 +13,7 @@ import { IonContent,
          IonToast, 
          IonFooter } from '@ionic/react';
 
-const log = getLogger('BooksList');
+const log = getLogger('SongsList');
 
 export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
   const { songs, fetching, fetchingError, successMessage, closeShowSuccess} = useContext(SongsContext);

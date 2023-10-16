@@ -16,6 +16,8 @@ import { RouteComponentProps } from 'react-router';
 import { SongsContext } from './SongProvider';
 import { Song } from './Song';
 
+const log = getLogger('EditLogger');
+
 interface SongEditProps extends RouteComponentProps<{
   id?: string;
 }> {}
@@ -23,7 +25,7 @@ interface SongEditProps extends RouteComponentProps<{
 export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
   const { songs, updating, updateError, updateSong } = useContext(SongsContext);
   const [title, setTitle] = useState('');
-  const [duration, setDuration] = useState(0);
+  const [duration, setDuration] = useState('');
   const [songToUpdate, setSongToUpdate] = useState<Song>();
 
   useEffect(() => {
@@ -34,14 +36,16 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
     setSongToUpdate(song);
     if(song){
       setTitle(song.title);
-      setDuration(song.duration);
+      setDuration(song.duration.toString());
     }
   }, [match.params.id, songs]);
 
   const handleUpdate = useCallback(() => {
-    const editedSong ={ ...songToUpdate, title: title, duration: duration };
-    console.log(duration);
+    const editedSong ={ ...songToUpdate, title: title, duration: parseFloat(duration) };
+    //console.log(duration);
     //console.log(editedSong);
+    log(editedSong);
+    console.log(updateSong);
     updateSong && updateSong(editedSong).then(() => history.goBack());
   }, [songToUpdate, updateSong, title, duration, history]);
 
@@ -58,8 +62,8 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
         </IonToolbar>
       </IonHeader>
       <IonContent>
-        <IonInput value={title} onIonChange={e => setTitle(prev => e.detail.value || '')} />
-        <IonInput value={duration} onIonChange={e => e.detail.value ? setDuration(prev => parseFloat(e.detail.value!)) : setDuration(0) }/>
+        <IonInput value={title} onIonInput={e => setTitle(prev => e.detail.value || '')} />
+        <IonInput value={duration} onIonInput={e => e.detail.value ? setDuration(prev => e.detail.value!) : setDuration('') }/>
         <IonLoading isOpen={updating} />
         {updateError && (
           <div>{updateError.message || 'Failed to save item'}</div>

@@ -4,7 +4,7 @@ import { getLogger } from '../core';
 import { getAllSongs, updateSongAPI, newWebSocket } from './SongApi';
 import { Song } from './Song';
 
-const log = getLogger('BookProvider');
+const log = getLogger('SongProvider');
 
 type UpdateSongFn = (song: Song) => Promise<any>;
 
@@ -58,8 +58,12 @@ const reducer: (state: SongsState, action: ActionProps) => SongsState
             songs[index] = song;
             return { ...state,  songs, updating: false };
         case SHOW_SUCCESS_MESSSAGE:
+            const allSongs = [...(state.songs || [])];
+            const updatedSong = payload.updatedSong;
+            const indexOfSong = allSongs.findIndex(it => it.id === updatedSong.id);
+            allSongs[indexOfSong] = updatedSong;
             console.log(payload);
-            return {...state, successMessage: payload }
+            return {...state, songs: allSongs, successMessage: payload.successMessage }
         case HIDE_SUCCESS_MESSSAGE:
             return {...state, successMessage: payload }
         
@@ -134,7 +138,7 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
           log(`ws message, item ${event}`);
           if (event === 'updated') {
             console.log(payload);
-            dispatch({ type: SHOW_SUCCESS_MESSSAGE, payload: payload });
+            dispatch({ type: SHOW_SUCCESS_MESSSAGE, payload: {successMessage: payload.successMessage, updatedSong: payload.updatedSong } });
           }
         });
         return () => {
