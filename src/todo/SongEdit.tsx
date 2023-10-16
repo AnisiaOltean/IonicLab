@@ -9,12 +9,14 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
-  IonToast
+  IonBackButton,
+  IonLabel
 } from '@ionic/react';
 import { getLogger } from '../core';
 import { RouteComponentProps } from 'react-router';
 import { SongsContext } from './SongProvider';
 import { Song } from './Song';
+import styles from './styles.module.css';
 
 const log = getLogger('EditLogger');
 
@@ -53,6 +55,9 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
+        <IonButtons slot="start">
+            <IonBackButton></IonBackButton>
+          </IonButtons>
           <IonTitle>Edit</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={handleUpdate}>
@@ -62,8 +67,8 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
         </IonToolbar>
       </IonHeader>
       <IonContent>
-        <IonInput value={title} onIonInput={e => setTitle(prev => e.detail.value || '')} />
-        <IonInput value={duration} onIonInput={e => e.detail.value ? setDuration(prev => e.detail.value!) : setDuration('') }/>
+        <IonInput label="Title:" className={styles.customInput} placeholder="New Title" value={title} onIonInput={e => setTitle(prev => e.detail.value || '')} />
+        <IonInput label="Duration:" className={styles.customInput} placeholder="New duration" value={duration} onIonInput={e => e.detail.value ? setDuration(prev => e.detail.value!) : setDuration('') }/>
         <IonLoading isOpen={updating} />
         {updateError && (
           <div>{updateError.message || 'Failed to save item'}</div>

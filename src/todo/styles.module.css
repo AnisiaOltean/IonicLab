@@ -10,3 +10,6 @@
   display: block;
 }
 
+.customInput {
+  padding: 3px !important;
+}
