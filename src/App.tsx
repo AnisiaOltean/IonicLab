@@ -25,7 +25,7 @@ import './theme/variables.css';
 import { SongsList } from './todo/SongsList';
 import { SongProvider } from './todo/SongProvider';
 import { SongEdit } from './todo/SongEdit';
-
+import { SongAdd } from './todo/SongAdd';
 
 setupIonicReact();
 
@@ -35,6 +35,7 @@ const App: React.FC = () => (
       <IonReactRouter>
         <IonRouterOutlet>
           <Route exact path="/songs" component={SongsList} />
+          <Route path="/song" component={SongAdd} exact={true}/>
           <Route path="/song/:id" component={SongEdit} exact={true}/>
           <Route exact path="/" render={() => <Redirect to="/songs" />} />
         </IonRouterOutlet>

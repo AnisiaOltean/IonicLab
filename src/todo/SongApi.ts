@@ -30,6 +30,7 @@ const config = {
 const baseURL = "localhost:3000";
 const getBooksUrl = `http://${baseURL}/songs`;
 const updateBookUrl = `http://${baseURL}/song`;
+const createSongUrl = `http://${baseURL}/song`;
 
 export const getAllSongs: () => Promise<Song[]> = () => {
     return withLogs(axios.get(getBooksUrl, config), 'getAllSongs');
@@ -37,6 +38,10 @@ export const getAllSongs: () => Promise<Song[]> = () => {
 
 export const updateSongAPI: (song: Song) => Promise<Song[]> = (song) => {
     return withLogs(axios.put(`${updateBookUrl}/${song.id}`, song, config), 'updateSong');
+}
+
+export const createSongAPI: (song: Song) => Promise<Song[]> = (song) => {
+  return withLogs(axios.post(`${createSongUrl}`, song, config), 'createSong');
 }
 
 interface MessageData {

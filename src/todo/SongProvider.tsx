@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useReducer } from 'react';
 import PropTypes from 'prop-types';
 import { getLogger } from '../core';
-import { getAllSongs, updateSongAPI, newWebSocket } from './SongApi';
+import { getAllSongs, updateSongAPI, createSongAPI, newWebSocket } from './SongApi';
 import { Song } from './Song';
 
 const log = getLogger('SongProvider');
@@ -15,6 +15,7 @@ interface SongsState {
     updating: boolean,
     updateError?: Error | null,
     updateSong?: UpdateSongFn,
+    addSong?: UpdateSongFn,
     successMessage?: string;
     closeShowSuccess?: () => void;
 }
@@ -37,6 +38,9 @@ const UPDATE_SONG_SUCCEDED = 'UPDATE_SONG_SUCCEDED';
 const UPDATE_SONG_FAILED = 'UPDATE_SONG_FAILED';
 const SHOW_SUCCESS_MESSSAGE = 'SHOW_SUCCESS_MESSAGE';
 const HIDE_SUCCESS_MESSSAGE = 'HIDE_SUCCESS_MESSAGE';
+const CREATE_SONG_STARTED = 'CREATE_SONG_STARTED';
+const CREATE_SONG_SUCCEDED = 'CREATE_SONG_SUCCEDED';
+const CREATE_SONG_FAILED = 'CREATE_SONG_FAILED';
 
 const reducer: (state: SongsState, action: ActionProps) => SongsState 
     = (state, { type, payload }) => {
@@ -57,6 +61,22 @@ const reducer: (state: SongsState, action: ActionProps) => SongsState
             const index = songs.findIndex(it => it.id === song.id);
             songs[index] = song;
             return { ...state,  songs, updating: false };
+        case CREATE_SONG_FAILED:
+          return { ...state, updateError: payload.error, updating: false };
+        case CREATE_SONG_STARTED:
+          return { ...state, updateError: null, updating: true };
+        case CREATE_SONG_SUCCEDED:
+            const beforeSongs = [...(state.songs || [])];
+            const createdSong = payload.song;
+            const indexOfAdded = beforeSongs.findIndex(it => it.id === createdSong.id);
+            if (indexOfAdded === -1) {
+              beforeSongs.splice(0, 0, createdSong);
+            } else {
+              beforeSongs[indexOfAdded] = createdSong;
+            }
+            console.log(beforeSongs);
+            console.log(payload);
+            return { ...state,  songs: beforeSongs, updating: false };
         case SHOW_SUCCESS_MESSSAGE:
             const allSongs = [...(state.songs || [])];
             const updatedSong = payload.updatedSong;
@@ -86,6 +106,7 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
     useEffect(wsEffect, []);
 
     const updateSong = useCallback<UpdateSongFn>(updateSongCallback, []);
+    const addSong = useCallback<UpdateSongFn>(addSongCallback, []);
 
     log('returns');
 
@@ -127,6 +148,20 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
         }
     }
 
+    async function addSongCallback(song: Song){
+        try{
+          log('updateSong started');
+          dispatch({ type: CREATE_SONG_STARTED });
+          const addedSong = await createSongAPI(song);
+          console.log(addedSong);
+          log('saveSong succeeded');
+          dispatch({ type: CREATE_SONG_SUCCEDED, payload: { song: addedSong } });
+        }catch(error){
+          log('addSong failed');
+          dispatch({ type: CREATE_SONG_FAILED, payload: { error } });
+        }
+    }
+
     function wsEffect() {
         let canceled = false;
         log('wsEffect - connecting');
@@ -140,6 +175,10 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
             console.log(payload);
             dispatch({ type: SHOW_SUCCESS_MESSSAGE, payload: {successMessage: payload.successMessage, updatedSong: payload.updatedSong } });
           }
+          else if(event == 'created'){
+            console.log(payload);
+            dispatch({ type: CREATE_SONG_SUCCEDED, payload: { song: payload.updatedSong } });
+          }
         });
         return () => {
           log('wsEffect - disconnecting');
@@ -152,7 +191,7 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
         dispatch({ type: HIDE_SUCCESS_MESSSAGE, payload: null });
     }
 
-    const value = { songs, fetching, fetchingError, updating, updateError, updateSong, successMessage, closeShowSuccess };
+    const value = { songs, fetching, fetchingError, updating, updateError, updateSong, addSong, successMessage, closeShowSuccess };
 
     return (
         <SongsContext.Provider value={value}>

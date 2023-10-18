@@ -11,14 +11,19 @@ import { IonContent,
          IonTitle, 
          IonToolbar,
          IonToast, 
-         IonFooter } from '@ionic/react';
+         IonFab,
+         IonFabButton,
+         IonIcon } from '@ionic/react';
+
+import { add } from 'ionicons/icons';
 
 const log = getLogger('SongsList');
 
 export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
-  const { songs, fetching, fetchingError, successMessage, closeShowSuccess} = useContext(SongsContext);
+  const { songs, fetching, fetchingError, successMessage, closeShowSuccess } = useContext(SongsContext);
 
   log('render');
+  console.log(songs);
   return (
     <IonPage>
       <IonHeader>
@@ -44,6 +49,11 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
         {fetchingError && (
           <div>{fetchingError.message || 'Failed to fetch songs'}</div>
         )}
+        <IonFab vertical="bottom" horizontal="end" slot="fixed">
+          <IonFabButton onClick={() => history.push('/song')}>
+            <IonIcon icon={add} />
+          </IonFabButton>
+        </IonFab>
         <IonToast
           isOpen={!!successMessage}
           message={successMessage}
