@@ -10,7 +10,8 @@ import {
   IonTitle,
   IonToolbar,
   IonBackButton,
-  IonLabel
+  IonLabel,
+  IonDatetime
 } from '@ionic/react';
 import { getLogger } from '../core';
 import { RouteComponentProps } from 'react-router';
@@ -29,6 +30,7 @@ export const SongAdd: React.FC<SongEditProps> = ({ history, match }) => {
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState('');
   const [artist, setArtist] = useState('');
+  const [date, setDate] = useState(new Date());
   const [songToUpdate, setSongToUpdate] = useState<Song>();
 
   useEffect(() => {
@@ -41,16 +43,23 @@ export const SongAdd: React.FC<SongEditProps> = ({ history, match }) => {
       setTitle(song.title);
       setArtist(song.artist!);
       setDuration(song.duration.toString());
+      setDate(song.dateOfRelease!);
     }
   }, [match.params.id, songs]);
 
   const handleAdd = useCallback(() => {
-    const editedSong ={ ...songToUpdate, title: title, artist: artist, duration: parseFloat(duration) };
+    const editedSong ={ ...songToUpdate, title: title, artist: artist, duration: parseFloat(duration), dateOfRelease: date };
     //console.log(duration);
     //console.log(editedSong);
     log(editedSong);
     addSong && addSong(editedSong).then(() => history.goBack());
-  }, [songToUpdate, addSong, title, duration, artist, history]);
+  }, [songToUpdate, addSong, title, duration, date, artist, history]);
+
+  const dateChanged = (value: any) => {
+    let formattedDate = value;
+    console.log(formattedDate);
+    setDate(formattedDate);
+  };
 
   return (
     <IonPage>
@@ -71,6 +80,10 @@ export const SongAdd: React.FC<SongEditProps> = ({ history, match }) => {
         <IonInput label="Title:" className={styles.customInput} placeholder="New Title" value={title} onIonInput={e => setTitle(prev => e.detail.value || '')} />
         <IonInput label="Artist:" className={styles.customInput} placeholder="New Artist" value={artist} onIonInput={e => setArtist(prev => e.detail.value || '')} />
         <IonInput label="Duration:" className={styles.customInput} placeholder="New duration" value={duration} onIonInput={e => e.detail.value ? setDuration(prev => e.detail.value!) : setDuration('') }/>
+        <IonInput label="DateOfRelease:" className={styles.customInput} placeholder="Choose date" value={new Date(date).toDateString()} />
+        <IonDatetime
+                onIonChange={(e) => dateChanged(e.detail.value)}>
+        </IonDatetime>
         <IonLoading isOpen={updating} />
         {updateError && (
           <div>{updateError.message || 'Failed to save item'}</div>
