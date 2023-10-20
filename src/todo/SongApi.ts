@@ -44,6 +44,10 @@ export const createSongAPI: (song: Song) => Promise<Song[]> = (song) => {
   return withLogs(axios.post(`${createSongUrl}`, song, config), 'createSong');
 }
 
+export const deleteSongAPI: (id: number) => Promise<Song[]> = (id) => {
+  return withLogs(axios.delete(`${createSongUrl}/${id}`, config), 'deleteSong');
+}
+
 interface MessageData {
     event: string;
     payload: {

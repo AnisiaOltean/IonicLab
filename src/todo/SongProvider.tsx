@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useReducer } from 'react';
 import PropTypes from 'prop-types';
 import { getLogger } from '../core';
-import { getAllSongs, updateSongAPI, createSongAPI, newWebSocket } from './SongApi';
+import { getAllSongs, updateSongAPI, createSongAPI, newWebSocket, deleteSongAPI } from './SongApi';
 import { Song } from './Song';
 
 const log = getLogger('SongProvider');
 
 type UpdateSongFn = (song: Song) => Promise<any>;
+type DeleteSongFn = (id: number) => Promise<any>;
 
 interface SongsState {
     songs?: Song[];
@@ -16,6 +17,7 @@ interface SongsState {
     updateError?: Error | null,
     updateSong?: UpdateSongFn,
     addSong?: UpdateSongFn,
+    deleteSong?: DeleteSongFn;
     successMessage?: string;
     closeShowSuccess?: () => void;
 }
@@ -41,6 +43,9 @@ const HIDE_SUCCESS_MESSSAGE = 'HIDE_SUCCESS_MESSAGE';
 const CREATE_SONG_STARTED = 'CREATE_SONG_STARTED';
 const CREATE_SONG_SUCCEDED = 'CREATE_SONG_SUCCEDED';
 const CREATE_SONG_FAILED = 'CREATE_SONG_FAILED';
+const DELETE_SONG_STARTED = 'DELETE_SONG_STARTED';
+const DELETE_SONG_SUCCEDED = 'DELETE_SONG_SUCCEDED';
+const DELETE_SONG_FAILED = 'DELETE_SONG_FAILED';
 
 const reducer: (state: SongsState, action: ActionProps) => SongsState 
     = (state, { type, payload }) => {
@@ -78,6 +83,21 @@ const reducer: (state: SongsState, action: ActionProps) => SongsState
             console.log(beforeSongs);
             console.log(payload);
             return { ...state,  songs: beforeSongs, updating: false };
+            case DELETE_SONG_FAILED:
+              console.log(payload.error);
+              return { ...state, updateError: payload.error, updating: false };
+            case DELETE_SONG_STARTED:
+              return { ...state, updateError: null, updating: true };
+            case DELETE_SONG_SUCCEDED:
+                const originalSongs = [...(state.songs || [])];
+                const deletedSong = payload.song;
+                const indexOfDeleted = originalSongs.findIndex(it => it.id === deletedSong.id);
+                if (indexOfDeleted > -1) {
+                  originalSongs.splice(indexOfDeleted, 1);
+                }
+                console.log(originalSongs);
+                console.log(payload);
+                return { ...state,  songs: originalSongs, updating: false };
         case SHOW_SUCCESS_MESSSAGE:
             const allSongs = [...(state.songs || [])];
             const updatedSong = payload.updatedSong;
@@ -108,6 +128,7 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
 
     const updateSong = useCallback<UpdateSongFn>(updateSongCallback, []);
     const addSong = useCallback<UpdateSongFn>(addSongCallback, []);
+    const deleteSong = useCallback<DeleteSongFn>(deleteSongCallback, []);
 
     log('returns');
 
@@ -164,6 +185,21 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
         }
     }
 
+    async function deleteSongCallback(id: number){
+        try{
+          log('deleteSong started');
+          dispatch({ type: DELETE_SONG_STARTED });
+          const deletedSong = await deleteSongAPI(id);
+          console.log('deleted song: '+ deletedSong);
+          log('deleteSong succeeded');
+          dispatch({ type: DELETE_SONG_SUCCEDED, payload: { song: deletedSong } });
+        }catch(error: any){
+          log('addSong failed');
+          console.log(error.response.data.message);
+          dispatch({ type: DELETE_SONG_FAILED, payload: { error: new Error(error.response.data.message) } });
+        }
+    }
+
     function wsEffect() {
         let canceled = false;
         log('wsEffect - connecting');
@@ -181,6 +217,10 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
             console.log(payload);
             dispatch({ type: CREATE_SONG_SUCCEDED, payload: { song: payload.updatedSong } });
           }
+          else if(event == 'deleted'){
+            console.log(payload);
+            dispatch({ type: DELETE_SONG_SUCCEDED, payload: { song: payload.updatedSong } });
+          }
         });
         return () => {
           log('wsEffect - disconnecting');
@@ -193,7 +233,7 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
         dispatch({ type: HIDE_SUCCESS_MESSSAGE, payload: null });
     }
 
-    const value = { songs, fetching, fetchingError, updating, updateError, updateSong, addSong, successMessage, closeShowSuccess };
+    const value = { songs, fetching, fetchingError, updating, updateError, updateSong, addSong, deleteSong, successMessage, closeShowSuccess };
 
     return (
         <SongsContext.Provider value={value}>

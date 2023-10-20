@@ -25,7 +25,7 @@ interface SongEditProps extends RouteComponentProps<{
 }> {}
 
 export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
-  const { songs, updating, updateError, updateSong } = useContext(SongsContext);
+  const { songs, updating, updateError, updateSong, deleteSong } = useContext(SongsContext);
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState('');
   const [songToUpdate, setSongToUpdate] = useState<Song>();
@@ -51,6 +51,11 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
     updateSong && updateSong(editedSong).then(() => editedSong.duration && history.goBack());
   }, [songToUpdate, updateSong, title, duration, history]);
 
+  const handleDelete = useCallback(()=>{
+    console.log(songToUpdate?.id);
+    deleteSong && deleteSong(songToUpdate?.id!).then(()=> history.goBack());
+  }, [songToUpdate, deleteSong, title, duration, history]);
+
   return (
     <IonPage>
       <IonHeader>
@@ -62,6 +67,9 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
           <IonButtons slot="end">
             <IonButton onClick={handleUpdate}>
               Update
+            </IonButton>
+            <IonButton onClick={handleDelete}>
+              Delete
             </IonButton>
           </IonButtons>
         </IonToolbar>
