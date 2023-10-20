@@ -11,7 +11,9 @@ import {
   IonToolbar,
   IonBackButton,
   IonLabel,
-  IonDatetime
+  IonDatetime,
+  IonSelect,
+  IonSelectOption
 } from '@ionic/react';
 import { getLogger } from '../core';
 import { RouteComponentProps } from 'react-router';
@@ -31,29 +33,17 @@ export const SongAdd: React.FC<SongEditProps> = ({ history, match }) => {
   const [duration, setDuration] = useState('');
   const [artist, setArtist] = useState('');
   const [date, setDate] = useState(new Date());
+  const [option, setOption] = useState(true);
   const [songToUpdate, setSongToUpdate] = useState<Song>();
 
-  useEffect(() => {
-    const routeId = match.params.id || '';
-    console.log(routeId);
-    const idNumber = parseInt(routeId);
-    const song = songs?.find(it => it.id === idNumber);
-    setSongToUpdate(song);
-    if(song){
-      setTitle(song.title);
-      setArtist(song.artist!);
-      setDuration(song.duration.toString());
-      setDate(song.dateOfRelease!);
-    }
-  }, [match.params.id, songs]);
-
   const handleAdd = useCallback(() => {
-    const editedSong ={ ...songToUpdate, title: title, artist: artist, duration: parseFloat(duration), dateOfRelease: date };
+    const editedSong ={ ...songToUpdate, title: title, artist: artist, duration: parseFloat(duration), dateOfRelease: date, hasFeaturedArtists: option };
     //console.log(duration);
     //console.log(editedSong);
     log(editedSong);
-    addSong && addSong(editedSong).then(() => history.goBack());
-  }, [songToUpdate, addSong, title, duration, date, artist, history]);
+    console.log(updateError);
+    addSong && addSong(editedSong).then(() => editedSong.duration && history.goBack());
+  }, [songToUpdate, addSong, title, duration, date, artist, option, history]);
 
   const dateChanged = (value: any) => {
     let formattedDate = value;
@@ -84,9 +74,18 @@ export const SongAdd: React.FC<SongEditProps> = ({ history, match }) => {
         <IonDatetime
                 onIonChange={(e) => dateChanged(e.detail.value)}>
         </IonDatetime>
+        <IonInput label="Featured Artists:" className={styles.customInput} placeholder="True/False" value={option==true ? 'True' : 'False'} />
+        <IonSelect value={option} onIonChange={e => setOption(e.detail.value)}>
+          <IonSelectOption value={true}>
+            {'True'}
+          </IonSelectOption>
+          <IonSelectOption value={false}>
+            {'False'}
+          </IonSelectOption>
+        </IonSelect>
         <IonLoading isOpen={updating} />
         {updateError && (
-          <div>{updateError.message || 'Failed to save item'}</div>
+          <div className={styles.errorMessage}>{updateError.message || 'Failed to save item'}</div>
         )}
       </IonContent>
     </IonPage>

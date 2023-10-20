@@ -48,7 +48,7 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
     //console.log(editedSong);
     log(editedSong);
     console.log(updateSong);
-    updateSong && updateSong(editedSong).then(() => history.goBack());
+    updateSong && updateSong(editedSong).then(() => editedSong.duration && history.goBack());
   }, [songToUpdate, updateSong, title, duration, history]);
 
   return (
@@ -71,7 +71,7 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
         <IonInput label="Duration:" className={styles.customInput} placeholder="New duration" value={duration} onIonInput={e => e.detail.value ? setDuration(prev => e.detail.value!) : setDuration('') }/>
         <IonLoading isOpen={updating} />
         {updateError && (
-          <div>{updateError.message || 'Failed to save item'}</div>
+          <div className={styles.errorMessage}>{updateError.message || 'Failed to update item'}</div>
         )}
       </IonContent>
     </IonPage>

@@ -62,6 +62,7 @@ const reducer: (state: SongsState, action: ActionProps) => SongsState
             songs[index] = song;
             return { ...state,  songs, updating: false };
         case CREATE_SONG_FAILED:
+            console.log(payload.error);
           return { ...state, updateError: payload.error, updating: false };
         case CREATE_SONG_STARTED:
           return { ...state, updateError: null, updating: true };
@@ -142,23 +143,24 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
           const updatedSong = await updateSongAPI(song);
           log('saveSong succeeded');
           dispatch({ type: UPDATE_SONG_SUCCEDED, payload: { song: updatedSong } });
-        } catch (error) {
+        } catch (error: any) {
           log('updateSong failed');
-          dispatch({ type: UPDATE_SONG_FAILED, payload: { error } });
+          dispatch({ type: UPDATE_SONG_FAILED, payload: { error: new Error(error.response.data.message) } });
         }
     }
 
     async function addSongCallback(song: Song){
         try{
-          log('updateSong started');
+          log('addSong started');
           dispatch({ type: CREATE_SONG_STARTED });
           const addedSong = await createSongAPI(song);
           console.log(addedSong);
           log('saveSong succeeded');
           dispatch({ type: CREATE_SONG_SUCCEDED, payload: { song: addedSong } });
-        }catch(error){
+        }catch(error: any){
           log('addSong failed');
-          dispatch({ type: CREATE_SONG_FAILED, payload: { error } });
+          console.log(error.response.data.message);
+          dispatch({ type: CREATE_SONG_FAILED, payload: { error: new Error(error.response.data.message) } });
         }
     }
 
