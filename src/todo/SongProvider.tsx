@@ -4,6 +4,9 @@ import { getLogger } from '../core';
 import { getAllSongs, updateSongAPI, createSongAPI, newWebSocket, deleteSongAPI } from './SongApi';
 import { Song } from './Song';
 import { AuthContext } from '../auth';
+import { useNetwork } from '../pages/useNetwork';
+import {useIonToast} from "@ionic/react";
+import { Preferences } from '@capacitor/preferences';
 
 const log = getLogger('SongProvider');
 
@@ -125,9 +128,12 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
     const [state, dispatch] = useReducer(reducer, initialState);
     const { songs, fetching, fetchingError, updating, updateError, successMessage } = state;
     const { token } = useContext(AuthContext);
+    const { networkStatus } = useNetwork();
+    const [toast] = useIonToast();
 
     useEffect(getItemsEffect, [token]);
     useEffect(wsEffect, [token]);
+    useEffect(executePendingOperations, [networkStatus.connected, token, toast]);
 
     const updateSong = useCallback<UpdateSongFn>(updateSongCallback, [token]);
     const addSong = useCallback<UpdateSongFn>(addSongCallback, [token]);
@@ -182,7 +188,7 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
           log('addSong started');
           dispatch({ type: CREATE_SONG_STARTED });
           console.log(token);
-          const addedSong = await createSongAPI(token, song);
+          const addedSong = await createSongAPI(token, song, networkStatus, toast);
           console.log(addedSong);
           log('saveSong succeeded');
           dispatch({ type: CREATE_SONG_SUCCEDED, payload: { song: addedSong } });
@@ -207,6 +213,28 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
           dispatch({ type: DELETE_SONG_FAILED, payload: { error: new Error(error.response.data.message) } });
         }
     }
+
+    function executePendingOperations(){
+      async function helperMethod(){
+          if(networkStatus.connected && token?.trim()){
+              log('executing pending operations')
+              const { keys } = await Preferences.keys();
+              for(const key of keys) {
+                  if(key.startsWith("sav-")){
+                      const res = await Preferences.get({key: key});
+                      console.log("Result", res);
+                      if (typeof res.value === "string") {
+                          const value = JSON.parse(res.value);
+                          log('creating item from pending', value);
+                          await createSongAPI(value.token, value.song, networkStatus, toast);
+                          await Preferences.remove({key: key});
+                      }
+                  }
+              }
+          }
+      }
+      helperMethod();
+  }
 
     function wsEffect() {
         let canceled = false;
