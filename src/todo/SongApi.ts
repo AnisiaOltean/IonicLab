@@ -1,51 +1,27 @@
 import axios from "axios";
-import { getLogger } from "../core";
+import { getLogger, authConfig, baseUrl, withLogs } from "../core";
 import { Song } from "./Song";
 
 const log = getLogger('songLogger');
 
-interface ResponseProps<T> {
-    data: T;
-  }
+const getBooksUrl = `http://${baseUrl}/api/song`;
+const updateBookUrl = `http://${baseUrl}/api/song`;
+const createSongUrl = `http://${baseUrl}/api/song`;
 
-function withLogs<T>(promise: Promise<ResponseProps<T>>, fnName: string): Promise<T> {
-log(`${fnName} - started`);
-return promise
-    .then(res => {
-    log(`${fnName} - succeeded`);
-    return Promise.resolve(res.data);
-    })
-    .catch(err => {
-    log(`${fnName} - failed`);
-    return Promise.reject(err);
-    });
-}
-  
-const config = {
-    headers: {
-        'Content-Type': 'application/json'
-    }
-};
-
-const baseURL = "localhost:3000";
-const getBooksUrl = `http://${baseURL}/songs`;
-const updateBookUrl = `http://${baseURL}/song`;
-const createSongUrl = `http://${baseURL}/song`;
-
-export const getAllSongs: () => Promise<Song[]> = () => {
-    return withLogs(axios.get(getBooksUrl, config), 'getAllSongs');
+export const getAllSongs: (token: string) => Promise<Song[]> = (token) => {
+    return withLogs(axios.get(getBooksUrl, authConfig(token)), 'getAllSongs');
 }
 
-export const updateSongAPI: (song: Song) => Promise<Song[]> = (song) => {
-    return withLogs(axios.put(`${updateBookUrl}/${song.id}`, song, config), 'updateSong');
+export const updateSongAPI: (token: string, song: Song) => Promise<Song[]> = (token, song) => {
+    return withLogs(axios.put(`${updateBookUrl}/${song._id}`, song, authConfig(token)), 'updateSong');
 }
 
-export const createSongAPI: (song: Song) => Promise<Song[]> = (song) => {
-  return withLogs(axios.post(`${createSongUrl}`, song, config), 'createSong');
+export const createSongAPI: (token: string, song: Song) => Promise<Song[]> = (token, song) => {
+  return withLogs(axios.post(`${createSongUrl}`, song, authConfig(token)), 'createSong');
 }
 
-export const deleteSongAPI: (id: number) => Promise<Song[]> = (id) => {
-  return withLogs(axios.delete(`${createSongUrl}/${id}`, config), 'deleteSong');
+export const deleteSongAPI: (token: string, id: string) => Promise<Song[]> = (token, id) => {
+  return withLogs(axios.delete(`${createSongUrl}/${id}`, authConfig(token)), 'deleteSong');
 }
 
 interface MessageData {
@@ -56,10 +32,11 @@ interface MessageData {
     };
 }
 
-export const newWebSocket = (onMessage: (data: MessageData) => void) => {
-    const ws = new WebSocket(`ws://${baseURL}`)
+export const newWebSocket = (token: string, onMessage: (data: MessageData) => void) => {
+    const ws = new WebSocket(`ws://${baseUrl}`)
     ws.onopen = () => {
       log('web socket onopen');
+      ws.send(JSON.stringify({type: 'authorization', payload :{token}}));
     };
     ws.onclose = () => {
       log('web socket onclose');
@@ -69,6 +46,7 @@ export const newWebSocket = (onMessage: (data: MessageData) => void) => {
     };
     ws.onmessage = messageEvent => {
       log('web socket onmessage');
+      console.log(messageEvent.data);
       onMessage(JSON.parse(messageEvent.data));
     };
     return () => {

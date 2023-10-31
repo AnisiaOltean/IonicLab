@@ -33,8 +33,8 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
   useEffect(() => {
     const routeId = match.params.id || '';
     console.log(routeId);
-    const idNumber = parseInt(routeId);
-    const song = songs?.find(it => it.id === idNumber);
+    //const idNumber = parseInt(routeId);
+    const song = songs?.find(it => it._id === routeId);
     setSongToUpdate(song);
     if(song){
       setTitle(song.title);
@@ -52,8 +52,8 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
   }, [songToUpdate, updateSong, title, duration, history]);
 
   const handleDelete = useCallback(()=>{
-    console.log(songToUpdate?.id);
-    deleteSong && deleteSong(songToUpdate?.id!).then(()=> history.goBack());
+    console.log(songToUpdate?._id);
+    deleteSong && deleteSong(songToUpdate?._id!).then(()=> history.goBack());
   }, [songToUpdate, deleteSong, title, duration, history]);
 
   return (

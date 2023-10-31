@@ -26,21 +26,25 @@ import { SongsList } from './todo/SongsList';
 import { SongProvider } from './todo/SongProvider';
 import { SongEdit } from './todo/SongEdit';
 import { SongAdd } from './todo/SongAdd';
+import { AuthProvider, Login, PrivateRoute } from './auth';
 
 setupIonicReact();
 
 const App: React.FC = () => (
   <IonApp>
-    <SongProvider>
       <IonReactRouter>
         <IonRouterOutlet>
-          <Route exact path="/songs" component={SongsList} />
-          <Route path="/song" component={SongAdd} exact={true}/>
-          <Route path="/song/:id" component={SongEdit} exact={true}/>
-          <Route exact path="/" render={() => <Redirect to="/songs" />} />
+          <AuthProvider>
+            <Route path="/login" component={Login} exact={true}/>
+            <SongProvider>
+              <PrivateRoute path="/songs" component={SongsList} exact={true} />
+              <Route path="/song" component={SongAdd} exact={true}/>
+              <Route path="/song/:id" component={SongEdit} exact={true}/>
+            </SongProvider>
+            <Route exact path="/" render={() => <Redirect to="/songs"/>}/>
+          </AuthProvider>
         </IonRouterOutlet>
       </IonReactRouter>
-    </SongProvider>
   </IonApp>
 );
 

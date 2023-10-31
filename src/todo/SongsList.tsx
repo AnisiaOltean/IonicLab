@@ -13,22 +13,34 @@ import { IonContent,
          IonToast, 
          IonFab,
          IonFabButton,
-         IonIcon } from '@ionic/react';
+         IonIcon,
+         IonButton } from '@ionic/react';
 
 import { add } from 'ionicons/icons';
+import { AuthContext } from '../auth';
+import { NetworkState } from '../pages/NetworkState';
 
 const log = getLogger('SongsList');
 
 export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
   const { songs, fetching, fetchingError, successMessage, closeShowSuccess } = useContext(SongsContext);
+  const { logout } = useContext(AuthContext);
 
   log('render');
   console.log(songs);
+
+  function handleLogout(){
+    logout?.();
+    history.push('/login');
+  }
+
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
           <IonTitle>Songs App</IonTitle>
+          <NetworkState />
+          <IonButton onClick={handleLogout}>Logout</IonButton>
         </IonToolbar>
       </IonHeader>
       <IonContent>
@@ -36,7 +48,7 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
         {songs && (
           <IonList>
             {songs.map(song => 
-              <SongComponent key={song.id} id={song.id} 
+              <SongComponent key={song._id} _id={song._id} 
               artist={song.artist}
               title={song.title} 
               duration={song.duration} 

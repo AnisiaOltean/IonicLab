@@ -5,11 +5,11 @@ import { Song } from "./Song";
 import styles from "./styles.module.css";
 
 interface SongPropsExtended extends Song {
-    onEdit: (id?: number) => void;
+    onEdit: (_id?: string) => void;
 }
 
-const SongComponent: React.FC<SongPropsExtended> = ({id, artist, duration, title, dateOfRelease, hasFeaturedArtists, onEdit }) => (
-    <IonItem onClick={()=> onEdit(id)}>
+const SongComponent: React.FC<SongPropsExtended> = ({_id, artist, duration, title, dateOfRelease, hasFeaturedArtists, onEdit }) => (
+    <IonItem onClick={()=> onEdit(_id)}>
         <div className={styles.songContainer}>
             <IonLabel className={styles.songTitle}>
                 <h1>{title}</h1>

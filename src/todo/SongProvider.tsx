@@ -1,13 +1,14 @@
-import React, { useCallback, useEffect, useReducer } from 'react';
+import React, { useCallback, useEffect, useReducer, useContext } from 'react';
 import PropTypes from 'prop-types';
 import { getLogger } from '../core';
 import { getAllSongs, updateSongAPI, createSongAPI, newWebSocket, deleteSongAPI } from './SongApi';
 import { Song } from './Song';
+import { AuthContext } from '../auth';
 
 const log = getLogger('SongProvider');
 
 type UpdateSongFn = (song: Song) => Promise<any>;
-type DeleteSongFn = (id: number) => Promise<any>;
+type DeleteSongFn = (id: string) => Promise<any>;
 
 interface SongsState {
     songs?: Song[];
@@ -63,7 +64,7 @@ const reducer: (state: SongsState, action: ActionProps) => SongsState
         case UPDATE_SONG_SUCCEDED:
             const songs = [...(state.songs || [])];
             const song = payload.song;
-            const index = songs.findIndex(it => it.id === song.id);
+            const index = songs.findIndex(it => it._id === song._id);
             songs[index] = song;
             return { ...state,  songs, updating: false };
         case CREATE_SONG_FAILED:
@@ -74,7 +75,8 @@ const reducer: (state: SongsState, action: ActionProps) => SongsState
         case CREATE_SONG_SUCCEDED:
             const beforeSongs = [...(state.songs || [])];
             const createdSong = payload.song;
-            const indexOfAdded = beforeSongs.findIndex(it => it.id === createdSong.id);
+            console.log(createdSong);
+            const indexOfAdded = beforeSongs.findIndex(it => it._id === createdSong._id);
             if (indexOfAdded === -1) {
               beforeSongs.splice(0, 0, createdSong);
             } else {
@@ -91,7 +93,7 @@ const reducer: (state: SongsState, action: ActionProps) => SongsState
             case DELETE_SONG_SUCCEDED:
                 const originalSongs = [...(state.songs || [])];
                 const deletedSong = payload.song;
-                const indexOfDeleted = originalSongs.findIndex(it => it.id === deletedSong.id);
+                const indexOfDeleted = originalSongs.findIndex(it => it._id === deletedSong._id);
                 if (indexOfDeleted > -1) {
                   originalSongs.splice(indexOfDeleted, 1);
                 }
@@ -101,7 +103,7 @@ const reducer: (state: SongsState, action: ActionProps) => SongsState
         case SHOW_SUCCESS_MESSSAGE:
             const allSongs = [...(state.songs || [])];
             const updatedSong = payload.updatedSong;
-            const indexOfSong = allSongs.findIndex(it => it.id === updatedSong.id);
+            const indexOfSong = allSongs.findIndex(it => it._id === updatedSong._id);
             allSongs[indexOfSong] = updatedSong;
             console.log(payload);
             return {...state, songs: allSongs, successMessage: payload.successMessage }
@@ -122,13 +124,14 @@ interface SongProviderProps {
 export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
     const [state, dispatch] = useReducer(reducer, initialState);
     const { songs, fetching, fetchingError, updating, updateError, successMessage } = state;
+    const { token } = useContext(AuthContext);
 
-    useEffect(getItemsEffect, []);
-    useEffect(wsEffect, []);
+    useEffect(getItemsEffect, [token]);
+    useEffect(wsEffect, [token]);
 
-    const updateSong = useCallback<UpdateSongFn>(updateSongCallback, []);
-    const addSong = useCallback<UpdateSongFn>(addSongCallback, []);
-    const deleteSong = useCallback<DeleteSongFn>(deleteSongCallback, []);
+    const updateSong = useCallback<UpdateSongFn>(updateSongCallback, [token]);
+    const addSong = useCallback<UpdateSongFn>(addSongCallback, [token]);
+    const deleteSong = useCallback<DeleteSongFn>(deleteSongCallback, [token]);
 
     log('returns');
 
@@ -140,10 +143,14 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
         }
 
         async function fetchItems() {
+          if(!token?.trim()){
+            return;
+          }
+
             try{
                 log('fetchBooks started');
                 dispatch({ type: FETCH_SONGS_STARTED });
-                const songs = await getAllSongs();
+                const songs = await getAllSongs(token);
                 log('fetchItems succeeded');
                 if (!canceled) {
                 dispatch({ type: FETCH_SONGS_SUCCEEDED, payload: { songs } });
@@ -161,7 +168,7 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
         try {
           log('updateSong started');
           dispatch({ type: UPDATE_SONG_STARTED });
-          const updatedSong = await updateSongAPI(song);
+          const updatedSong = await updateSongAPI(token, song);
           log('saveSong succeeded');
           dispatch({ type: UPDATE_SONG_SUCCEDED, payload: { song: updatedSong } });
         } catch (error: any) {
@@ -174,7 +181,8 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
         try{
           log('addSong started');
           dispatch({ type: CREATE_SONG_STARTED });
-          const addedSong = await createSongAPI(song);
+          console.log(token);
+          const addedSong = await createSongAPI(token, song);
           console.log(addedSong);
           log('saveSong succeeded');
           dispatch({ type: CREATE_SONG_SUCCEDED, payload: { song: addedSong } });
@@ -185,11 +193,11 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
         }
     }
 
-    async function deleteSongCallback(id: number){
+    async function deleteSongCallback(id: string){
         try{
           log('deleteSong started');
           dispatch({ type: DELETE_SONG_STARTED });
-          const deletedSong = await deleteSongAPI(id);
+          const deletedSong = await deleteSongAPI(token, id);
           console.log('deleted song: '+ deletedSong);
           log('deleteSong succeeded');
           dispatch({ type: DELETE_SONG_SUCCEDED, payload: { song: deletedSong } });
@@ -203,29 +211,34 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
     function wsEffect() {
         let canceled = false;
         log('wsEffect - connecting');
-        const closeWebSocket = newWebSocket(message => {
-          if (canceled) {
-            return;
-          }
-          const { event, payload } = message;
-          log(`ws message, item ${event}`);
-          if (event === 'updated') {
-            console.log(payload);
-            dispatch({ type: SHOW_SUCCESS_MESSSAGE, payload: {successMessage: payload.successMessage, updatedSong: payload.updatedSong } });
-          }
-          else if(event == 'created'){
-            console.log(payload);
-            dispatch({ type: CREATE_SONG_SUCCEDED, payload: { song: payload.updatedSong } });
-          }
-          else if(event == 'deleted'){
-            console.log(payload);
-            dispatch({ type: DELETE_SONG_SUCCEDED, payload: { song: payload.updatedSong } });
-          }
-        });
+        let closeWebSocket: () => void;
+        if(token?.trim()){
+          closeWebSocket = newWebSocket(token, message => {
+            if (canceled) {
+              return;
+            }
+            const { event, payload } = message;
+            console.log('Provider message: ', message);
+
+            log(`ws message, item ${event}`);
+            if (event === 'updated') {
+              console.log(payload);
+              dispatch({ type: SHOW_SUCCESS_MESSSAGE, payload: {successMessage: payload.successMessage, updatedSong: payload.updatedSong } });
+            }
+            else if(event == 'created'){
+              console.log(payload);
+              dispatch({ type: CREATE_SONG_SUCCEDED, payload: { song: payload.updatedSong } });
+            }
+            else if(event === 'deleted'){
+              console.log(payload);
+              dispatch({ type: DELETE_SONG_SUCCEDED, payload: { song: payload.updatedSong } });
+            }
+          });
+        }
         return () => {
           log('wsEffect - disconnecting');
           canceled = true;
-          closeWebSocket();
+          closeWebSocket?.();
         }
     }
 
