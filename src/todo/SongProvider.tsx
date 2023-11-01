@@ -79,15 +79,24 @@ const reducer: (state: SongsState, action: ActionProps) => SongsState
             const beforeSongs = [...(state.songs || [])];
             const createdSong = payload.song;
             console.log(createdSong);
-            const indexOfAdded = beforeSongs.findIndex(it => it._id === createdSong._id);
-            if (indexOfAdded === -1) {
-              beforeSongs.splice(0, 0, createdSong);
-            } else {
-              beforeSongs[indexOfAdded] = createdSong;
+            if(createdSong.isNotSaved){
+              const indexOfNotAdded = beforeSongs.findIndex(it => it.isNotSaved===true && it.title===createdSong.title);
+              if (indexOfNotAdded === -1){
+                beforeSongs.splice(0, 0, createdSong);
+              } else
+                beforeSongs[indexOfNotAdded] = createdSong;
+            }
+            else {
+              const indexOfAdded = beforeSongs.findIndex(it => it._id === createdSong._id);
+              if (indexOfAdded === -1) {
+                beforeSongs.splice(0, 0, createdSong);
+              } else {
+                beforeSongs[indexOfAdded] = createdSong;
+              }
             }
             console.log(beforeSongs);
             console.log(payload);
-            return { ...state,  songs: beforeSongs, updating: false };
+            return { ...state,  songs: beforeSongs, updating: false, updateError: null };
             case DELETE_SONG_FAILED:
               console.log(payload.error);
               return { ...state, updateError: payload.error, updating: false };
@@ -188,14 +197,30 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
           log('addSong started');
           dispatch({ type: CREATE_SONG_STARTED });
           console.log(token);
-          const addedSong = await createSongAPI(token, song, networkStatus, toast);
+          const addedSong = await createSongAPI(token, song);
           console.log(addedSong);
           log('saveSong succeeded');
           dispatch({ type: CREATE_SONG_SUCCEDED, payload: { song: addedSong } });
         }catch(error: any){
           log('addSong failed');
-          console.log(error.response.data.message);
-          dispatch({ type: CREATE_SONG_FAILED, payload: { error: new Error(error.response.data.message) } });
+          console.log(error.response);
+          if(error.toJSON().message === 'Network Error'){
+              console.log('Saving song locally...');
+              const { keys } = await Preferences.keys();
+              const matchingKeys = keys.filter(key => key.startsWith('sav-'));
+              const numberOfItems = matchingKeys.length + 1;
+              console.log(numberOfItems);
+
+              song._id = numberOfItems.toString(); // ii adaug si id...
+              song.isNotSaved = true;
+              await Preferences.set({
+                key: `sav-${song.title}`,
+                value: JSON.stringify({token, song })
+              });
+              dispatch({ type: CREATE_SONG_SUCCEDED, payload: { song: song } });
+              toast("You are offline... Saving song locally!", 3000);
+          }
+          dispatch({ type: CREATE_SONG_FAILED, payload: { error: new Error(error.response || 'Network error') } });
         }
     }
 
@@ -225,8 +250,9 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
                       console.log("Result", res);
                       if (typeof res.value === "string") {
                           const value = JSON.parse(res.value);
+                          value.song._id=undefined;
                           log('creating item from pending', value);
-                          await createSongAPI(value.token, value.song, networkStatus, toast);
+                          await addSongCallback(value.song);
                           await Preferences.remove({key: key});
                       }
                   }

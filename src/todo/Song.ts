@@ -5,4 +5,5 @@ export interface Song {
     title: string;
     dateOfRelease?: Date;
     hasFeaturedArtists?: boolean;
+    isNotSaved?: boolean;
 }

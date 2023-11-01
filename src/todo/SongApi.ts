@@ -17,24 +17,8 @@ export const updateSongAPI: (token: string, song: Song) => Promise<Song[]> = (to
     return withLogs(axios.put(`${updateBookUrl}/${song._id}`, song, authConfig(token)), 'updateSong');
 }
 
-export const createSongAPI: (token: string, song: Song, networkStatus: any, present: any) => Promise<Song[]> = (token, song, networkStatus, present ) => {
-  function offlineActionGenerator() {
-    return new Promise<Song>(async (resolve) => {
-        present("Couldn't send data to the server, caching it locally", 3000);
-        await Preferences.set({
-            key: `sav-${song.title}`,
-            value: JSON.stringify({token, song })
-        })
-        resolve(song);
-    });
-}
-    if(networkStatus.connected){
-        return withLogs(axios.post(`${createSongUrl}`, song, authConfig(token)), 'createSong').catch( () => {
-            return offlineActionGenerator();
-        });
-    }
-    return offlineActionGenerator();
-  //return withLogs(axios.post(`${createSongUrl}`, song, authConfig(token)), 'createSong');
+export const createSongAPI: (token: string, song: Song) => Promise<Song[]> = (token, song) => {
+  return withLogs(axios.post(`${createSongUrl}`, song, authConfig(token)), 'createSong');
 }
 
 export const deleteSongAPI: (token: string, id: string) => Promise<Song[]> = (token, id) => {

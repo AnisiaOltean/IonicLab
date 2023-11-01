@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { RouteComponentProps } from 'react-router';
 import SongComponent from './SongComponent';
 import { getLogger } from '../core';
@@ -14,17 +14,37 @@ import { IonContent,
          IonFab,
          IonFabButton,
          IonIcon,
-         IonButton } from '@ionic/react';
+         IonButton, 
+         IonButtons,
+         IonInfiniteScroll,
+         IonInfiniteScrollContent,
+         IonSearchbar,
+         IonSelect, IonSelectOption } from '@ionic/react';
 
 import { add } from 'ionicons/icons';
 import { AuthContext } from '../auth';
 import { NetworkState } from '../pages/NetworkState';
+import { Song } from './Song';
+import styles from "./styles.module.css";
 
 const log = getLogger('SongsList');
+const songsPerPage = 3;
+const filterValues = ["HasFeatured", "NoFeatured"];
 
 export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
   const { songs, fetching, fetchingError, successMessage, closeShowSuccess } = useContext(SongsContext);
   const { logout } = useContext(AuthContext);
+  const [isOpen, setIsOpen]= useState(false);
+  const [index, setIndex] = useState<number>(0);
+  const [songsAux, setSongsAux] = useState<Song[] | undefined>([]);
+  const [more, setHasMore] = useState(true);
+  const [searchText, setSearchText] = useState('');
+  const [filter, setFilter] = useState<string | undefined>(undefined);
+
+  useEffect(()=>{
+    if(fetching) setIsOpen(true);
+    else setIsOpen(false);
+  }, [fetching]);
 
   log('render');
   console.log(songs);
@@ -34,20 +54,86 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
     history.push('/login');
   }
 
+  // pagination
+  useEffect(() => {
+    if (songs?.length && songs?.length > 0) {
+        fetchData();
+    }
+  }, [songs]);
+
+  // searching
+  useEffect(()=>{
+    if (searchText === "") {
+      setSongsAux(songs);
+    }
+    if (songs && searchText !== "") {
+      setSongsAux(songs.filter(song => song.artist!.startsWith(searchText)));
+    }
+  }, [searchText]);
+
+   // filtering
+   useEffect(() => {
+    if (songs && filter) {
+        setSongsAux(songs.filter(song => {
+            if (filter === "HasFeatured")
+                return song.hasFeaturedArtists === true;
+            else
+                return song.hasFeaturedArtists === false;
+        }));
+    }
+}, [filter]);
+
+  function fetchData() {
+    if(songs){
+      const newIndex = Math.min(index + songsPerPage, songs.length);
+      if( newIndex >= songs.length){
+          setHasMore(false);
+      }
+      else{
+          setHasMore(true);
+      }
+      setSongsAux(songs.slice(0, newIndex));
+      setIndex(newIndex);
+    }
+  }
+
+  async function searchNext($event: CustomEvent<void>){
+    await fetchData();
+    await ($event.target as HTMLIonInfiniteScrollElement).complete();
+  }
+
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
           <IonTitle>Songs App</IonTitle>
+          <IonSelect 
+            className={styles.selectBar} 
+            slot="end" 
+            value={filter} 
+            placeholder="Filter" 
+            onIonChange={(e) => setFilter(e.detail.value)}>
+                        {filterValues.map((each) => (
+                            <IonSelectOption key={each} value={each}>
+                                {each}
+                            </IonSelectOption>
+                        ))}
+          </IonSelect>
           <NetworkState />
-          <IonButton onClick={handleLogout}>Logout</IonButton>
+          <IonSearchbar className={styles.customSearchBar} placeholder="Search by artist" value={searchText} debounce={200} onIonInput={(e) => {
+                        setSearchText(e.detail.value!);
+                    }} slot="secondary">
+          </IonSearchbar>
+          <IonButtons slot='end'>
+             <IonButton onClick={handleLogout}>Logout</IonButton>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
-      <IonContent>
-        <IonLoading isOpen={fetching} message="Fetching songs..." />
-        {songs && (
+      <IonContent fullscreen>
+        <IonLoading isOpen={isOpen} message="Fetching songs..." />
+        {songsAux && (
           <IonList>
-            {songs.map(song => 
+            {songsAux.map(song => 
               <SongComponent key={song._id} _id={song._id} 
               artist={song.artist}
               title={song.title} 
@@ -58,6 +144,10 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
             )}
           </IonList>
         )}
+        <IonInfiniteScroll threshold="100px" disabled={!more} onIonInfinite={(e:CustomEvent<void>) => searchNext(e)} >
+          <IonInfiniteScrollContent loadingText="Loading more food..." >
+          </IonInfiniteScrollContent>
+        </IonInfiniteScroll>
         {fetchingError && (
           <div>{fetchingError.message || 'Failed to fetch songs'}</div>
         )}
