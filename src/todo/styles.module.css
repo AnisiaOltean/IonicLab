@@ -6,6 +6,10 @@
   width: 100%;
 }
 
+.disabledComponent {
+  background-color: grey;
+}
+
 .songContainer .songTitle {
   display: block;
 }

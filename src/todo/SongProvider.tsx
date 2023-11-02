@@ -79,20 +79,12 @@ const reducer: (state: SongsState, action: ActionProps) => SongsState
             const beforeSongs = [...(state.songs || [])];
             const createdSong = payload.song;
             console.log(createdSong);
-            if(createdSong.isNotSaved){
-              const indexOfNotAdded = beforeSongs.findIndex(it => it.isNotSaved===true && it.title===createdSong.title);
-              if (indexOfNotAdded === -1){
+            const indexOfAdded = beforeSongs.findIndex(it => it._id === createdSong._id || it.title === createdSong.title);
+            console.log("index: ", indexOfAdded);
+            if (indexOfAdded === -1) {
                 beforeSongs.splice(0, 0, createdSong);
-              } else
-                beforeSongs[indexOfNotAdded] = createdSong;
-            }
-            else {
-              const indexOfAdded = beforeSongs.findIndex(it => it._id === createdSong._id);
-              if (indexOfAdded === -1) {
-                beforeSongs.splice(0, 0, createdSong);
-              } else {
+            } else {
                 beforeSongs[indexOfAdded] = createdSong;
-              }
             }
             console.log(beforeSongs);
             console.log(payload);
@@ -188,7 +180,19 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
           dispatch({ type: UPDATE_SONG_SUCCEDED, payload: { song: updatedSong } });
         } catch (error: any) {
           log('updateSong failed');
-          dispatch({ type: UPDATE_SONG_FAILED, payload: { error: new Error(error.response.data.message) } });
+          // save item to storage
+          console.log('Updating song locally...');
+
+          song.isNotSaved = true;
+          await Preferences.set({
+            key: `upd-${song.title}`,
+            value: JSON.stringify({token, song })
+          });
+          dispatch({ type: UPDATE_SONG_SUCCEDED, payload: { song: song } });
+          toast("You are offline... Updating song locally!", 3000);
+    
+          if(error.toJSON().message === 'Network Error')
+            dispatch({ type: UPDATE_SONG_FAILED, payload: { error: new Error(error.response) } });
         }
     }
 
@@ -204,23 +208,24 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
         }catch(error: any){
           log('addSong failed');
           console.log(error.response);
-          if(error.toJSON().message === 'Network Error'){
-              console.log('Saving song locally...');
-              const { keys } = await Preferences.keys();
-              const matchingKeys = keys.filter(key => key.startsWith('sav-'));
-              const numberOfItems = matchingKeys.length + 1;
-              console.log(numberOfItems);
+          // save item to storage
+          console.log('Saving song locally...');
+          const { keys } = await Preferences.keys();
+          const matchingKeys = keys.filter(key => key.startsWith('sav-'));
+          const numberOfItems = matchingKeys.length + 1;
+          console.log(numberOfItems);
 
-              song._id = numberOfItems.toString(); // ii adaug si id...
-              song.isNotSaved = true;
-              await Preferences.set({
-                key: `sav-${song.title}`,
-                value: JSON.stringify({token, song })
-              });
-              dispatch({ type: CREATE_SONG_SUCCEDED, payload: { song: song } });
-              toast("You are offline... Saving song locally!", 3000);
-          }
-          dispatch({ type: CREATE_SONG_FAILED, payload: { error: new Error(error.response || 'Network error') } });
+          song._id = numberOfItems.toString(); // ii adaug si id...
+          song.isNotSaved = true;
+          await Preferences.set({
+            key: `sav-${song.title}`,
+            value: JSON.stringify({token, song })
+          });
+          dispatch({ type: CREATE_SONG_SUCCEDED, payload: { song: song } });
+          toast("You are offline... Saving song locally!", 3000);
+    
+          if(error.toJSON().message === 'Network Error')
+            dispatch({ type: CREATE_SONG_FAILED, payload: { error: new Error(error.response || 'Network error') } });
         }
     }
 
@@ -250,13 +255,25 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
                       console.log("Result", res);
                       if (typeof res.value === "string") {
                           const value = JSON.parse(res.value);
-                          value.song._id=undefined;
+                          value.song._id=undefined;  // ca sa imi puna serverul id nou!!
                           log('creating item from pending', value);
                           await addSongCallback(value.song);
                           await Preferences.remove({key: key});
                       }
                   }
               }
+              for(const key of keys) {
+                if(key.startsWith("upd-")){
+                    const res = await Preferences.get({key: key});
+                    console.log("Result", res);
+                    if (typeof res.value === "string") {
+                        const value = JSON.parse(res.value);
+                        log('updating item from pending', value);
+                        await updateSongCallback(value.song);
+                        await Preferences.remove({key: key});
+                    }
+                }
+            }
           }
       }
       helperMethod();

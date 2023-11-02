@@ -8,8 +8,8 @@ interface SongPropsExtended extends Song {
     onEdit: (_id?: string) => void;
 }
 
-const SongComponent: React.FC<SongPropsExtended> = ({_id, artist, duration, title, dateOfRelease, hasFeaturedArtists, onEdit }) => (
-    <IonItem onClick={()=> onEdit(_id)}>
+const SongComponent: React.FC<SongPropsExtended> = ({_id, artist, duration, title, dateOfRelease, hasFeaturedArtists, isNotSaved, onEdit }) => (
+    <IonItem color={isNotSaved ? "medium" : undefined} onClick={()=> onEdit(_id)}>
         <div className={styles.songContainer}>
             <IonLabel className={styles.songTitle}>
                 <h1>{title}</h1>

@@ -40,6 +40,7 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
   const [more, setHasMore] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [filter, setFilter] = useState<string | undefined>(undefined);
+  //const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(()=>{
     if(fetching) setIsOpen(true);
@@ -54,11 +55,9 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
     history.push('/login');
   }
 
-  // pagination
-  useEffect(() => {
-    if (songs?.length && songs?.length > 0) {
-        fetchData();
-    }
+  //pagination
+  useEffect(()=>{
+    fetchData();
   }, [songs]);
 
   // searching
@@ -140,6 +139,7 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
               duration={song.duration} 
               dateOfRelease={song.dateOfRelease}
               hasFeaturedArtists={song.hasFeaturedArtists} 
+              isNotSaved={song.isNotSaved}
               onEdit={id => history.push(`/song/${id}`)} /> 
             )}
           </IonList>

@@ -68,9 +68,9 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
             <IonButton onClick={handleUpdate}>
               Update
             </IonButton>
-            <IonButton onClick={handleDelete}>
+            {/* <IonButton onClick={handleDelete}>
               Delete
-            </IonButton>
+            </IonButton> */}
           </IonButtons>
         </IonToolbar>
       </IonHeader>
