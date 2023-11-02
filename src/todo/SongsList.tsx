@@ -28,19 +28,19 @@ import { Song } from './Song';
 import styles from "./styles.module.css";
 
 const log = getLogger('SongsList');
-const songsPerPage = 3;
+const songsPerPage = 4;
 const filterValues = ["HasFeatured", "NoFeatured"];
 
 export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
   const { songs, fetching, fetchingError, successMessage, closeShowSuccess } = useContext(SongsContext);
   const { logout } = useContext(AuthContext);
   const [isOpen, setIsOpen]= useState(false);
-  const [index, setIndex] = useState<number>(0);
+  const [index, setIndex] = useState<number>(songsPerPage);
   const [songsAux, setSongsAux] = useState<Song[] | undefined>([]);
   const [more, setHasMore] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [filter, setFilter] = useState<string | undefined>(undefined);
-  //const [hasFetched, setHasFetched] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(()=>{
     if(fetching) setIsOpen(true);
@@ -49,6 +49,8 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
 
   log('render');
   console.log(songs);
+  console.log(songsAux);
+  console.log(index);
 
   function handleLogout(){
     logout?.();
@@ -57,11 +59,15 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
 
   //pagination
   useEffect(()=>{
-    fetchData();
+    console.log('Render list, index: ', index);
+    if(songs){
+      setSongsAux(songs.slice(0, index));
+    }
   }, [songs]);
 
   // searching
   useEffect(()=>{
+    console.log('search changed!');
     if (searchText === "") {
       setSongsAux(songs);
     }
@@ -72,6 +78,7 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
 
    // filtering
    useEffect(() => {
+    console.log('filter changed!');
     if (songs && filter) {
         setSongsAux(songs.filter(song => {
             if (filter === "HasFeatured")
@@ -93,6 +100,7 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
       }
       setSongsAux(songs.slice(0, newIndex));
       setIndex(newIndex);
+      console.log('New index: ', newIndex);
     }
   }
 
@@ -144,8 +152,8 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
             )}
           </IonList>
         )}
-        <IonInfiniteScroll threshold="100px" disabled={!more} onIonInfinite={(e:CustomEvent<void>) => searchNext(e)} >
-          <IonInfiniteScrollContent loadingText="Loading more food..." >
+        <IonInfiniteScroll threshold="10px" disabled={!more} onIonInfinite={(e:CustomEvent<void>) => searchNext(e)} >
+          <IonInfiniteScrollContent loadingText="Loading more songs..." >
           </IonInfiniteScrollContent>
         </IonInfiniteScroll>
         {fetchingError && (

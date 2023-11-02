@@ -202,7 +202,6 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
           dispatch({ type: CREATE_SONG_STARTED });
           console.log(token);
           const addedSong = await createSongAPI(token, song);
-          console.log(addedSong);
           log('saveSong succeeded');
           dispatch({ type: CREATE_SONG_SUCCEDED, payload: { song: addedSong } });
         }catch(error: any){
@@ -227,6 +226,30 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
           if(error.toJSON().message === 'Network Error')
             dispatch({ type: CREATE_SONG_FAILED, payload: { error: new Error(error.response || 'Network error') } });
         }
+    }
+
+    async function checkUpdatedSongs(oldId: string){
+      // song = new Song
+      if(!oldId) return;
+
+      const { keys } = await Preferences.keys();
+
+      for(const key of keys) {
+        if(key.startsWith("upd-")){
+            const res = await Preferences.get({key: key});
+            console.log("Result", res);
+            if (typeof res.value === "string") {
+                const value = JSON.parse(res.value);
+                if(value.song._id === oldId){
+                  log('creating item from pending', value);
+                  await Preferences.remove({key: key});
+                  const valueString: string = JSON.stringify(value.song);
+                  console.log('Value: '+valueString);
+                  return valueString;
+                }
+            }
+         }
+      }
     }
 
     async function deleteSongCallback(id: string){
@@ -255,13 +278,21 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
                       console.log("Result", res);
                       if (typeof res.value === "string") {
                           const value = JSON.parse(res.value);
+                          const oldId = value.song._id;
+                          const valueString = await checkUpdatedSongs(oldId);
+                          if (valueString){
+                            const newValue = JSON.parse(valueString!);
+                            console.log('New value: ', newValue);
+                            value.song = newValue;
+                          }
                           value.song._id=undefined;  // ca sa imi puna serverul id nou!!
                           log('creating item from pending', value);
-                          await addSongCallback(value.song);
+                          await createSongAPI(token, value.song);
                           await Preferences.remove({key: key});
                       }
                   }
               }
+              console.log('Keys before update: ', keys);
               for(const key of keys) {
                 if(key.startsWith("upd-")){
                     const res = await Preferences.get({key: key});
@@ -269,7 +300,7 @@ export const SongProvider: React.FC<SongProviderProps> = ({ children }) => {
                     if (typeof res.value === "string") {
                         const value = JSON.parse(res.value);
                         log('updating item from pending', value);
-                        await updateSongCallback(value.song);
+                        await updateSongAPI(token, value.song);
                         await Preferences.remove({key: key});
                     }
                 }
