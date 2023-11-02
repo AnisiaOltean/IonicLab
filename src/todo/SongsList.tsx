@@ -87,7 +87,7 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
                 return song.hasFeaturedArtists === false;
         }));
     }
-}, [filter]);
+  }, [filter]);
 
   function fetchData() {
     if(songs){
@@ -140,7 +140,7 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
         <IonLoading isOpen={isOpen} message="Fetching songs..." />
         {songsAux && (
           <IonList>
-            {songsAux.map(song => 
+            {songsAux.slice(0, index).map(song => 
               <SongComponent key={song._id} _id={song._id} 
               artist={song.artist}
               title={song.title} 
