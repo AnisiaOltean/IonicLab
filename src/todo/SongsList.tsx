@@ -98,6 +98,7 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
       else{
           setHasMore(true);
       }
+      console.log(newIndex);
       setSongsAux(songs.slice(0, newIndex));
       setIndex(newIndex);
       console.log('New index: ', newIndex);

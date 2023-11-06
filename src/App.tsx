@@ -38,8 +38,8 @@ const App: React.FC = () => (
             <Route path="/login" component={Login} exact={true}/>
             <SongProvider>
               <PrivateRoute path="/songs" component={SongsList} exact={true} />
-              <Route path="/song" component={SongAdd} exact={true}/>
-              <Route path="/song/:id" component={SongEdit} exact={true}/>
+              <PrivateRoute path="/song" component={SongAdd} exact={true}/>
+              <PrivateRoute path="/song/:id" component={SongEdit} exact={true}/>
             </SongProvider>
             <Route exact path="/" render={() => <Redirect to="/songs"/>}/>
           </AuthProvider>
