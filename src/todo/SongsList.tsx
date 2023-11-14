@@ -149,6 +149,7 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
               dateOfRelease={song.dateOfRelease}
               hasFeaturedArtists={song.hasFeaturedArtists} 
               isNotSaved={song.isNotSaved}
+              webViewPath={song.webViewPath}
               onEdit={id => history.push(`/song/${id}`)} /> 
             )}
           </IonList>
