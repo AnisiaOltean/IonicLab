@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
   IonButton,
   IonButtons,
@@ -23,6 +23,9 @@ import { Song } from './Song';
 import styles from './styles.module.css';
 import { MyPhoto, usePhotos } from '../photo/usePhotos';
 import { camera, close, trash } from 'ionicons/icons';
+import MyMap from '../maps/MyMap';
+import { useLocation } from 'react-router';
+import { useMyLocation } from '../maps/useMyLocation';
 
 const log = getLogger('EditLogger');
 
@@ -39,8 +42,12 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
   const [webViewPath, setWebViewPath] = useState<string | undefined>('');
   const { photos, takePhoto, deletePhoto } = usePhotos();
   const [photoToDelete, setPhotoToDelete] = useState<MyPhoto>();
+  const location = useMyLocation();
+  const {latitude: lat = 46, longitude: lng = 23} = location.position?.coords || {};
+  const [currentLatitude, setCurrentLatitude] = useState<number | undefined>(lat);
+  const [currentLongitude, setCurrentLongitude] = useState<number | undefined>(lng);
 
-  console.log('rerender', webViewPath);
+  console.log('render', webViewPath, currentLatitude, currentLongitude, lat, lng);
   const filteredPhoto = photos.find(p => p.webviewPath === webViewPath);
   console.log('filtered photo: ', filteredPhoto);
 
@@ -51,22 +58,34 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
     //const idNumber = parseInt(routeId);
     const song = songs?.find(it => it._id === routeId);
     setSongToUpdate(song);
+    console.log('song: ', song);
     if(song){
       setTitle(song.title);
       setDuration(song.duration.toString());
       setWebViewPath(song.webViewPath || '');
+      setCurrentLatitude(song.latitude ? song.latitude : lat!);
+      setCurrentLongitude(song.longitude ? song.longitude : lng!);
     }
   }, [match.params.id, songs]);
 
+  const setLocation = (latitude: number, longitude: number) => {
+    setCurrentLatitude(latitude);
+    setCurrentLongitude(longitude);
+  }
+
+  useEffect(()=>{
+    lat: currentLatitude
+  }, [currentLatitude, currentLongitude]);
+
   const handleUpdate = useCallback(() => {
     console.log('path: ', webViewPath);
-    const editedSong ={ ...songToUpdate, title: title, duration: parseFloat(duration), webViewPath: webViewPath };
+    const editedSong ={ ...songToUpdate, title: title, duration: parseFloat(duration), webViewPath: webViewPath !=='' ? webViewPath: undefined, latitude: currentLatitude, longitude: currentLongitude };
     //console.log(duration);
     //console.log(editedSong);
-    log(editedSong);
+    log('edited song: ', editedSong);
     console.log(updateSong);
     updateSong && updateSong(editedSong).then(() => editedSong.duration && history.goBack());
-  }, [songToUpdate, updateSong, title, duration, history, webViewPath]);
+  }, [songToUpdate, updateSong, title, duration, history, webViewPath, currentLatitude, currentLongitude]);
 
   const handleDelete = useCallback(()=>{
     console.log(songToUpdate?._id);
@@ -137,6 +156,15 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
               role: 'cancel'
             }]}
             onDidDismiss={() => setPhotoToDelete(undefined)} />
+            {lat && lng && (
+                <MyMap
+                  lat={!currentLatitude? lat: currentLatitude}
+                  lng={!currentLongitude ? lng : currentLongitude}
+                  onMapClick={e=> setLocation(e.latitude, e.longitude)}
+                  onMarkerClick={e=> log('onMarker')}
+                />
+            )
+          }
       </IonContent>
     </IonPage>
   );

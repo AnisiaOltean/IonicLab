@@ -21,7 +21,7 @@ const SongComponent: React.FC<SongPropsExtended> = ({_id, artist, duration, titl
                     <p>Released at: {new Date(dateOfRelease).toDateString()} </p>
                 )}
                 {hasFeaturedArtists && <p>Featured: Yes</p>}
-                <img src={webViewPath} width={'200px'} height={'200px'}/>
+                <img src={webViewPath} alt={"No image"} width={'200px'} height={'200px'}/>
             </div>
         </div>
     </IonItem>

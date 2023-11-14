@@ -7,4 +7,6 @@ export interface Song {
     hasFeaturedArtists?: boolean;
     isNotSaved?: boolean;
     webViewPath?: string;
+    latitude?: number;
+    longitude?: number;
 }
