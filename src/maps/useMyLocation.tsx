@@ -8,6 +8,8 @@ interface MyLocation {
 
 export const useMyLocation = () => {
   const [state, setState] = useState<MyLocation>({});
+  console.log('use state: ', state);
+
   useEffect(() => {
     console.log('getting location....');
     watchMyLocation()
@@ -18,12 +20,13 @@ export const useMyLocation = () => {
     let cancelled = false;
     let callbackId: string;
     try {
-      const position = await Geolocation.getCurrentPosition();
+      const position = await Geolocation.getCurrentPosition({enableHighAccuracy: false, timeout: 10000});
+      console.log('position: ', position);
       updateMyPosition('current', position);
     } catch (error) {
       updateMyPosition('current', null, error);
     }
-    callbackId = await Geolocation.watchPosition({}, (position, error) => {
+    callbackId = await Geolocation.watchPosition({enableHighAccuracy: false}, (position, error) => {
       updateMyPosition('watch', position, error);
     });
     return () => {

@@ -42,12 +42,12 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
   const [webViewPath, setWebViewPath] = useState<string | undefined>('');
   const { photos, takePhoto, deletePhoto } = usePhotos();
   const [photoToDelete, setPhotoToDelete] = useState<MyPhoto>();
-  const location = useMyLocation();
-  const {latitude: lat = 46, longitude: lng = 23} = location.position?.coords || {};
-  const [currentLatitude, setCurrentLatitude] = useState<number | undefined>(lat);
-  const [currentLongitude, setCurrentLongitude] = useState<number | undefined>(lng);
+  
+  //const {latitude: lat = 46, longitude: lng = 23} = location.position?.coords || {};
+  const [currentLatitude, setCurrentLatitude] = useState<number | undefined>(undefined);
+  const [currentLongitude, setCurrentLongitude] = useState<number | undefined>(undefined);
 
-  console.log('render', webViewPath, currentLatitude, currentLongitude, lat, lng);
+  console.log('render', webViewPath, currentLatitude, currentLongitude);
   const filteredPhoto = photos.find(p => p.webviewPath === webViewPath);
   console.log('filtered photo: ', filteredPhoto);
 
@@ -63,19 +63,12 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
       setTitle(song.title);
       setDuration(song.duration.toString());
       setWebViewPath(song.webViewPath || '');
-      setCurrentLatitude(song.latitude ? song.latitude : lat!);
-      setCurrentLongitude(song.longitude ? song.longitude : lng!);
+      console.log('la:', song.latitude);
+      setCurrentLatitude(song.latitude ? song.latitude : 46);
+      setCurrentLongitude(song.longitude ? song.longitude : 23);
     }
   }, [match.params.id, songs]);
 
-  const setLocation = (latitude: number, longitude: number) => {
-    setCurrentLatitude(latitude);
-    setCurrentLongitude(longitude);
-  }
-
-  useEffect(()=>{
-    lat: currentLatitude
-  }, [currentLatitude, currentLongitude]);
 
   const handleUpdate = useCallback(() => {
     console.log('path: ', webViewPath);
@@ -156,15 +149,15 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
               role: 'cancel'
             }]}
             onDidDismiss={() => setPhotoToDelete(undefined)} />
-            {lat && lng && (
-                <MyMap
-                  lat={!currentLatitude? lat: currentLatitude}
-                  lng={!currentLongitude ? lng : currentLongitude}
-                  onMapClick={e=> setLocation(e.latitude, e.longitude)}
-                  onMarkerClick={e=> log('onMarker')}
-                />
-            )
-          }
+            <MyMap
+                lat={currentLatitude}
+                lng={currentLongitude}
+                onCoordsChanged={(newLat, newLng)=>{
+                  log(`HAHA ${newLat} ${newLng}`)
+                  setCurrentLatitude(newLat);
+                  setCurrentLongitude(newLng);
+                }}                      
+            />    
       </IonContent>
     </IonPage>
   );
