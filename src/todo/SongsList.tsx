@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef } from 'react';
 import { RouteComponentProps } from 'react-router';
 import SongComponent from './SongComponent';
 import { getLogger } from '../core';
@@ -19,7 +19,8 @@ import { IonContent,
          IonInfiniteScroll,
          IonInfiniteScrollContent,
          IonSearchbar,
-         IonSelect, IonSelectOption } from '@ionic/react';
+         IonSelect, IonSelectOption, createAnimation,
+         IonModal } from '@ionic/react';
 
 import { add } from 'ionicons/icons';
 import { AuthContext } from '../auth';
@@ -110,6 +111,39 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
     await ($event.target as HTMLIonInfiniteScrollElement).complete();
   }
 
+  const modalEl = useRef<HTMLIonModalElement>(null);
+  const closeModal = () => {
+    modalEl.current?.dismiss();
+  };
+
+
+  const enterAnimation = (baseEl: HTMLElement) => {
+    const root = baseEl.shadowRoot!;
+
+    const backdropAnimation = createAnimation()
+      .addElement(root.querySelector('ion-backdrop')!)
+      .fromTo('opacity', '0.01', 'var(--backdrop-opacity)');
+
+    const wrapperAnimation = createAnimation()
+      .addElement(root.querySelector('.modal-wrapper')!)
+      .duration(1200)
+      .keyframes([
+        { offset: 0, opacity: '0', transform: 'scale(0)' },
+        { offset: 0.4, opacity: '0.7', transform: 'scale(1.3)' },
+        { offset: 1, opacity: '0.99', transform: 'scale(1)' },
+      ]);
+
+    return createAnimation()
+      .addElement(baseEl)
+      .easing('ease-out')
+      .duration(500)
+      .addAnimation([backdropAnimation, wrapperAnimation]);
+  };
+
+  const leaveAnimation = (baseEl: HTMLElement) => {
+    return enterAnimation(baseEl).direction('reverse');
+  };  
+
   return (
     <IonPage>
       <IonHeader>
@@ -181,6 +215,18 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
           onDidDismiss={closeShowSuccess}
           duration={5000}
           />
+          <IonButton id="modal-trigger">Present Modal</IonButton>
+          <IonModal trigger="modal-trigger" ref={modalEl} enterAnimation={enterAnimation} leaveAnimation={leaveAnimation}>
+            <IonHeader>
+              <IonToolbar>
+                <IonTitle>Modal</IonTitle>
+                <IonButtons slot="end">
+                  <IonButton onClick={closeModal}>Close</IonButton>
+                </IonButtons>
+              </IonToolbar>
+            </IonHeader>
+            <IonContent className="ion-padding">Modal Content</IonContent>
+          </IonModal>
       </IonContent>
     </IonPage>
   );

@@ -10,7 +10,7 @@ interface MyMapProps {
 }
 
 const MyMap: React.FC<MyMapProps> = ({ lat, lng, onCoordsChanged }) => {
-  const mapRef = useRef<HTMLElement>();    
+    const mapRef = useRef<HTMLElement>();    
     let newMap: GoogleMap;
     let markerId : string;
   
@@ -20,19 +20,19 @@ const MyMap: React.FC<MyMapProps> = ({ lat, lng, onCoordsChanged }) => {
 
     console.log(`init lat = ${latitude}`);
 
-  useEffect(()=>{
-    console.log('adding marker..', lat, lng);
-    setLatitude(lat);
-    setLongitude(lng);
-    ()=>{ async()=>{
-      if(latitude && longitude){
-          markerId = await newMap.addMarker({
-              coordinate: {
-              lat: latitude,
-              lng: longitude
-              }                                
-          });
-      }
+    useEffect(()=>{
+      console.log('adding marker..', lat, lng);
+      setLatitude(lat);
+      setLongitude(lng);
+      ()=>{ async()=>{
+        if(latitude && longitude){
+            markerId = await newMap.addMarker({
+                coordinate: {
+                lat: latitude,
+                lng: longitude
+                }                                
+            });
+        }
   }}
   }, [lat, lng, mapLoaded]);
   //useEffect(myMapEffect2, [mapRef, lat, lng]);
@@ -79,13 +79,13 @@ const MyMap: React.FC<MyMapProps> = ({ lat, lng, onCoordsChanged }) => {
 
 return (
   <div className="component-wrapper">
-    <IonButton style={{ padding:3 }} onClick={createMap}>Create Map</IonButton>        
-    <capacitor-google-map ref={mapRef} style={{
-      display: 'inline-block',
-      width: "100%",
-      height: 400
-    }}>
-   </capacitor-google-map>        
+    <IonButton style={{ padding:3 }} onClick={createMap}>Create Map</IonButton>  
+      <capacitor-google-map ref={mapRef} style={{
+        display: 'inline-block',
+        width: "100%",
+        height: 400
+      }}>
+      </capacitor-google-map>  
   </div>
   )
 }

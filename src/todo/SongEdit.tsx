@@ -14,7 +14,8 @@ import {
   IonFab,
   IonFabButton,
   IonIcon,
-  IonActionSheet
+  IonActionSheet,
+  createAnimation
 } from '@ionic/react';
 import { getLogger } from '../core';
 import { RouteComponentProps } from 'react-router';
@@ -33,6 +34,7 @@ interface SongEditProps extends RouteComponentProps<{
   id?: string;
 }> {}
 
+
 export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
   const { songs, updating, updateError, updateSong, deleteSong } = useContext(SongsContext);
   const [title, setTitle] = useState('');
@@ -50,6 +52,8 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
   console.log('render', webViewPath, currentLatitude, currentLongitude);
   const filteredPhoto = photos.find(p => p.webviewPath === webViewPath);
   console.log('filtered photo: ', filteredPhoto);
+
+  useEffect(simpleAnimation, []);
 
   useEffect(() => {
     console.log('k', webViewPath);
@@ -125,7 +129,7 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
         {webViewPath && (<img onClick={()=> setPhotoToDelete(filteredPhoto)} src={webViewPath} width={'200px'} height={'200px'}/>)}
         {!webViewPath && (
           <IonFab vertical="bottom" horizontal="center" slot="fixed">
-              <IonFabButton onClick={handlePhotoChange}>
+              <IonFabButton className="square-a" onClick={handlePhotoChange}>
                   <IonIcon icon={camera}/>
               </IonFabButton>
           </IonFab>)
@@ -161,4 +165,21 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
       </IonContent>
     </IonPage>
   );
+
+  function simpleAnimation() {
+    const el = document.querySelector('.square-a');
+    if (el) {
+        const animation = createAnimation()
+            .addElement(el)
+            .duration(2000)
+            .direction('alternate')
+            .iterations(Infinity)
+            .keyframes([
+                { offset: 0, transform: 'scale(1.1)', opacity: '0.5', color: 'white'},
+                { offset: 0.5, transform: 'scale(1.3)', opacity: '1', color: 'white'},
+                { offset: 1, transform: 'scale(1)', opacity: '0.5', color: 'white'}
+            ]);
+        animation.play();
+    }
+  }
 }
