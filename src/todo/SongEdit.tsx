@@ -15,7 +15,8 @@ import {
   IonFabButton,
   IonIcon,
   IonActionSheet,
-  createAnimation
+  createAnimation,
+  IonModal
 } from '@ionic/react';
 import { getLogger } from '../core';
 import { RouteComponentProps } from 'react-router';
@@ -48,12 +49,10 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
   //const {latitude: lat = 46, longitude: lng = 23} = location.position?.coords || {};
   const [currentLatitude, setCurrentLatitude] = useState<number | undefined>(undefined);
   const [currentLongitude, setCurrentLongitude] = useState<number | undefined>(undefined);
-
   console.log('render', webViewPath, currentLatitude, currentLongitude);
+  
   const filteredPhoto = photos.find(p => p.webviewPath === webViewPath);
   console.log('filtered photo: ', filteredPhoto);
-
-  useEffect(simpleAnimation, []);
 
   useEffect(() => {
     console.log('k', webViewPath);
@@ -101,6 +100,39 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
     console.log(webViewPath);
   }
 
+  const modalEl = useRef<HTMLIonModalElement>(null);
+  const closeModal = () => {
+    modalEl.current?.dismiss();
+  };
+
+
+  const enterAnimation = (baseEl: HTMLElement) => {
+    const root = baseEl.shadowRoot!;
+
+    const backdropAnimation = createAnimation()
+      .addElement(root.querySelector('ion-backdrop')!)
+      .fromTo('opacity', '0.01', 'var(--backdrop-opacity)');
+
+    const wrapperAnimation = createAnimation()
+      .addElement(root.querySelector('.modal-wrapper')!)
+      .duration(1000)
+      .keyframes([
+        { offset: 0, opacity: '0', transform: 'scale(0)' },
+        { offset: 0.4, opacity: '0.7', transform: 'scale(1.3)' },
+        { offset: 1, opacity: '0.99', transform: 'scale(1)' },
+      ]);
+
+    return createAnimation()
+      .addElement(baseEl)
+      .easing('ease-out')
+      .duration(500)
+      .addAnimation([backdropAnimation, wrapperAnimation]);
+  };
+
+  const leaveAnimation = (baseEl: HTMLElement) => {
+    return enterAnimation(baseEl).direction('reverse');
+  };
+
   return (
     <IonPage>
       <IonHeader>
@@ -127,9 +159,10 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
           <div className={styles.errorMessage}>{updateError.message || 'Failed to update item'}</div>
         )}
         {webViewPath && (<img onClick={()=> setPhotoToDelete(filteredPhoto)} src={webViewPath} width={'200px'} height={'200px'}/>)}
+        <br />
         {!webViewPath && (
           <IonFab vertical="bottom" horizontal="center" slot="fixed">
-              <IonFabButton className="square-a" onClick={handlePhotoChange}>
+              <IonFabButton onClick={handlePhotoChange}>
                   <IonIcon icon={camera}/>
               </IonFabButton>
           </IonFab>)
@@ -153,33 +186,29 @@ export const SongEdit: React.FC<SongEditProps> = ({ history, match }) => {
               role: 'cancel'
             }]}
             onDidDismiss={() => setPhotoToDelete(undefined)} />
-            <MyMap
-                lat={currentLatitude}
-                lng={currentLongitude}
-                onCoordsChanged={(newLat, newLng)=>{
-                  log(`HAHA ${newLat} ${newLng}`)
-                  setCurrentLatitude(newLat);
-                  setCurrentLongitude(newLng);
-                }}                      
-            />    
+            <IonButton id="modal-trigger">Present Modal</IonButton>
+            <IonModal trigger="modal-trigger" ref={modalEl} enterAnimation={enterAnimation} leaveAnimation={leaveAnimation}>
+              <IonHeader>
+                <IonToolbar>
+                  <IonTitle>Modal</IonTitle>
+                  <IonButtons slot="end">
+                    <IonButton onClick={closeModal}>Close</IonButton>
+                  </IonButtons>
+                </IonToolbar>
+              </IonHeader>
+            <IonContent className="ion-padding">
+              <MyMap
+                  lat={currentLatitude}
+                  lng={currentLongitude}
+                  onCoordsChanged={(newLat, newLng)=>{
+                    log(`HAHA ${newLat} ${newLng}`)
+                    setCurrentLatitude(newLat);
+                    setCurrentLongitude(newLng);
+                  }}                      
+              />    
+            </IonContent>
+            </IonModal>
       </IonContent>
     </IonPage>
   );
-
-  function simpleAnimation() {
-    const el = document.querySelector('.square-a');
-    if (el) {
-        const animation = createAnimation()
-            .addElement(el)
-            .duration(2000)
-            .direction('alternate')
-            .iterations(Infinity)
-            .keyframes([
-                { offset: 0, transform: 'scale(1.1)', opacity: '0.5', color: 'white'},
-                { offset: 0.5, transform: 'scale(1.3)', opacity: '1', color: 'white'},
-                { offset: 1, transform: 'scale(1)', opacity: '0.5', color: 'white'}
-            ]);
-        animation.play();
-    }
-  }
 }

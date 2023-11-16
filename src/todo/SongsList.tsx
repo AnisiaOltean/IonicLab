@@ -43,6 +43,8 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
   const [filter, setFilter] = useState<string | undefined>(undefined);
   const [hasFetched, setHasFetched] = useState(false);
 
+  useEffect(simpleAnimation, []);
+  
   useEffect(()=>{
     if(fetching) setIsOpen(true);
     else setIsOpen(false);
@@ -196,7 +198,7 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
           <div>{fetchingError.message || 'Failed to fetch songs'}</div>
         )}
         <IonFab vertical="bottom" horizontal="end" slot="fixed">
-          <IonFabButton onClick={() => history.push('/song')}>
+          <IonFabButton className="square-a" onClick={() => history.push('/song')}>
             <IonIcon icon={add} />
           </IonFabButton>
         </IonFab>
@@ -215,19 +217,24 @@ export const SongsList: React.FC<RouteComponentProps> = ({ history }) => {
           onDidDismiss={closeShowSuccess}
           duration={5000}
           />
-          <IonButton id="modal-trigger">Present Modal</IonButton>
-          <IonModal trigger="modal-trigger" ref={modalEl} enterAnimation={enterAnimation} leaveAnimation={leaveAnimation}>
-            <IonHeader>
-              <IonToolbar>
-                <IonTitle>Modal</IonTitle>
-                <IonButtons slot="end">
-                  <IonButton onClick={closeModal}>Close</IonButton>
-                </IonButtons>
-              </IonToolbar>
-            </IonHeader>
-            <IonContent className="ion-padding">Modal Content</IonContent>
-          </IonModal>
       </IonContent>
     </IonPage>
   );
+
+  function simpleAnimation() {
+    const el = document.querySelector('.square-a');
+    if (el) {
+        const animation = createAnimation()
+            .addElement(el)
+            .duration(2000)
+            .direction('alternate')
+            .iterations(Infinity)
+            .keyframes([
+                { offset: 0, transform: 'scale(1.1)', opacity: '0.5', color: 'white'},
+                { offset: 0.5, transform: 'scale(1.3)', opacity: '1', color: 'white'},
+                { offset: 1, transform: 'scale(1)', opacity: '0.5', color: 'white'}
+            ]);
+        animation.play();
+    }
+  }
 };
